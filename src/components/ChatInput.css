@@ -148,7 +148,8 @@
 /* Mobile View */
 @media (max-width: 768px) {
   .chat-input-wrapper {
-    padding: 0.75rem 1rem 1.25rem;
+    padding: 0.75rem 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   }
 
   .chat-input {
@@ -181,7 +182,8 @@
 /* Small Mobile View */
 @media (max-width: 480px) {
   .chat-input-wrapper {
-    padding: 0.5rem 0.75rem 1rem;
+    padding: 0.5rem 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
   }
 
   .input-container {
