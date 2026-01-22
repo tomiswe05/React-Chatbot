@@ -3,7 +3,7 @@
   padding: 1rem 2rem 1.5rem;
   display: flex;
   justify-content: center;
-  flex-shrink: 0;
+  flex: 0 0 auto;
   background-color: #060505;
   transition: padding-bottom 0.15s ease-out;
   position: relative;
