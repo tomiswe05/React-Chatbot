@@ -1,0 +1,77 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Nunito Sans", sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-page {
+  display: flex;
+  height: 100vh;
+  background-color: #060505;
+  overflow: hidden;
+}
+
+.chat-container {
+  height: 100vh;
+  background-color: #060505;
+  color: #EDEDED;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* MAIN CONTENT AREA */
+.chat-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  padding: 1rem;
+  min-height: 0;
+}
+
+/* Tablet View */
+@media (max-width: 1024px) {
+  .chat-content {
+    justify-content: flex-start;
+    padding-top: 2rem;
+  }
+}
+
+/* Mobile View */
+@media (max-width: 768px) {
+  .chat-page {
+    height: 100dvh;
+  }
+
+  .chat-container {
+    height: 100dvh;
+    padding-top: 3.5rem;
+  }
+
+  .chat-content {
+    justify-content: flex-start;
+    padding: 0.5rem;
+    padding-top: 1rem;
+  }
+}
+
+/* Small Mobile View */
+@media (max-width: 480px) {
+  .chat-container {
+    padding-top: 3rem;
+  }
+
+  .chat-content {
+    padding-top: 0.5rem;
+  }
+}
