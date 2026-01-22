@@ -68,48 +68,49 @@
 /* Mobile View */
 @media (max-width: 768px) {
   .greeting {
-    padding: 1rem 0.75rem 0.75rem;
+    padding: 2rem 1rem 1.5rem;
   }
 
   .greeting-avatar {
-    width: 70px;
-    height: 70px;
-    margin-bottom: 1rem;
-    box-shadow: 0 0 25px rgba(97, 218, 251, 0.25);
+    width: 90px;
+    height: 90px;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 0 30px rgba(97, 218, 251, 0.3);
   }
 
   .avatar-icon {
-    width: 42px;
-    height: 42px;
+    width: 55px;
+    height: 55px;
   }
 
   .greeting-text {
-    font-size: 1.4rem;
-    font-weight: 700;
-    max-width: 90%;
+    font-size: 1.5rem;
+    font-weight: 600;
+    max-width: 85%;
+    line-height: 1.4;
   }
 }
 
 /* Small Mobile View */
 @media (max-width: 480px) {
   .greeting {
-    padding: 0.75rem 0.5rem 0.5rem;
+    padding: 1.5rem 1rem 1rem;
   }
 
   .greeting-avatar {
-    width: 60px;
-    height: 60px;
-    margin-bottom: 0.75rem;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1rem;
   }
 
   .avatar-icon {
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
   }
 
   .greeting-text {
-    font-size: 1.25rem;
-    font-weight: 700;
-    line-height: 1.35;
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1.4;
   }
 }
