@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import './Chat.css'
 import Sidebar from '../components/Sidebar'
 import Greeting from '../components/Greeting'
@@ -28,6 +28,13 @@ function Chat() {
   const [error, setError] = useState(null)
   const messagesEndRef = useRef(null)
 
+  // NEW: Track which conversation we're in
+  // null = new chat (not saved yet), string = existing conversation ID
+  const [conversationId, setConversationId] = useState(null)
+
+  // NEW: Track when sidebar needs to refresh (after new message)
+  const [refreshSidebar, setRefreshSidebar] = useState(0)
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -36,12 +43,20 @@ function Chat() {
     scrollToBottom()
   }, [messages])
 
+  /**
+   * Send a message to the API
+   *
+   * Key changes:
+   * 1. Include conversation_id in request (if we have one)
+   * 2. Store the returned conversation_id (for new conversations)
+   * 3. Trigger sidebar refresh after successful message
+   */
   const handleSend = async (message) => {
     if (!message.trim() || loading) return
 
     setError(null)
 
-    // Add user message to chat
+    // Add user message to chat immediately (optimistic UI)
     const userMessage = { role: 'user', content: message }
     setMessages(prev => [...prev, userMessage])
     setLoading(true)
@@ -54,6 +69,7 @@ function Chat() {
         },
         body: JSON.stringify({
           question: message,
+          conversation_id: conversationId,  // NEW: Include conversation ID
           top_k: 5
         })
       })
@@ -64,6 +80,12 @@ function Chat() {
 
       const data = await response.json()
 
+      // NEW: Store the conversation ID from response
+      // This is especially important for new conversations
+      if (data.conversation_id) {
+        setConversationId(data.conversation_id)
+      }
+
       // Add assistant message with sources
       const assistantMessage = {
         role: 'assistant',
@@ -71,6 +93,9 @@ function Chat() {
         sources: data.sources
       }
       setMessages(prev => [...prev, assistantMessage])
+
+      // NEW: Trigger sidebar refresh to show updated conversation list
+      setRefreshSidebar(prev => prev + 1)
 
     } catch (err) {
       setError(err.message || 'Failed to get response')
@@ -81,6 +106,56 @@ function Chat() {
     }
   }
 
+  /**
+   * NEW: Load an existing conversation from the sidebar
+   *
+   * Fetches all messages for a conversation and displays them
+   */
+  const loadConversation = useCallback(async (convId) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`${API_URL}/conversations/${convId}`)
+
+      if (!response.ok) {
+        throw new Error(`Failed to load conversation: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      // Set the conversation ID
+      setConversationId(convId)
+
+      // Transform messages to match our format
+      // API returns: { id, role, content, sources, created_at }
+      // We need: { role, content, sources }
+      const loadedMessages = data.messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        sources: msg.sources || []
+      }))
+
+      setMessages(loadedMessages)
+
+    } catch (err) {
+      setError(err.message || 'Failed to load conversation')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  /**
+   * NEW: Start a fresh conversation
+   *
+   * Clears messages and resets conversation ID
+   */
+  const startNewChat = useCallback(() => {
+    setConversationId(null)
+    setMessages([])
+    setError(null)
+  }, [])
+
   const handleCardClick = (card) => {
     handleSend(`Tell me about ${card.title}`)
   }
@@ -89,7 +164,13 @@ function Chat() {
 
   return (
     <div className="chat-page">
-      <Sidebar />
+      {/* NEW: Pass functions and state to Sidebar */}
+      <Sidebar
+        onSelectConversation={loadConversation}
+        onNewChat={startNewChat}
+        currentConversationId={conversationId}
+        refreshTrigger={refreshSidebar}
+      />
 
       <section className="chat-container">
         <div className="chat-content">
