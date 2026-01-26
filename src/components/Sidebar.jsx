@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import './Sidebar.css'
 
-const API_URL = 'http://localhost:8000/api'
+const API_URL = import.meta.env.VITE_API_URL
 
 /**
  * Groups conversations by date: Today, Yesterday, Last 7 Days, Last 30 Days, Older
