@@ -1,14 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
 import './Sidebar.css'
 
 const API_URL = import.meta.env.VITE_API_URL
 
-/**
- * Groups conversations by date: Today, Yesterday, Last 7 Days, Last 30 Days, Older
- *
- * @param {Array} conversations - Array of conversation objects with updated_at field
- * @returns {Array} - Array of { label, conversations } groups
- */
 function groupConversationsByDate(conversations) {
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -43,42 +38,41 @@ function groupConversationsByDate(conversations) {
     }
   })
 
-  // Convert to array and filter out empty groups
   return Object.entries(groups)
     .filter(([_, convs]) => convs.length > 0)
     .map(([label, convs]) => ({ label, conversations: convs }))
 }
 
-/**
- * Sidebar component for displaying chat history
- *
- * Props:
- * - onSelectConversation: Function to call when a conversation is clicked
- * - onNewChat: Function to call when "New Chat" is clicked
- * - currentConversationId: ID of the currently active conversation (for highlighting)
- * - refreshTrigger: Number that changes when sidebar should refetch data
- */
 function Sidebar({
   onSelectConversation,
   onNewChat,
+  onAuthClick,
   currentConversationId,
   refreshTrigger
 }) {
   const [searchQuery, setSearchQuery] = useState("")
   const [isOpen, setIsOpen] = useState(false)
   const [conversations, setConversations] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  /**
-   * Fetch conversations from the API
-   * Runs on mount and whenever refreshTrigger changes
-   */
+  const { user, logout, getToken } = useAuth()
+
   useEffect(() => {
+    if (!user) {
+      setConversations([])
+      return
+    }
+
     async function fetchConversations() {
       try {
         setLoading(true)
-        const response = await fetch(`${API_URL}/conversations`)
+        const token = await getToken()
+        const response = await fetch(`${API_URL}/conversations`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        })
 
         if (!response.ok) {
           throw new Error(`Failed to fetch: ${response.status}`)
@@ -96,45 +90,43 @@ function Sidebar({
     }
 
     fetchConversations()
-  }, [refreshTrigger]) // Re-fetch when refreshTrigger changes
+  }, [refreshTrigger, user])
 
   const toggleSidebar = () => setIsOpen(!isOpen)
 
-  /**
-   * Handle clicking on a conversation
-   * Closes sidebar on mobile and loads the conversation
-   */
   const handleConversationClick = (convId) => {
     if (onSelectConversation) {
       onSelectConversation(convId)
     }
-    // Close sidebar on mobile after selection
     setIsOpen(false)
   }
 
-  /**
-   * Handle "New Chat" button click
-   */
   const handleNewChat = () => {
+    if (!user) {
+      if (onAuthClick) onAuthClick()
+      return
+    }
     if (onNewChat) {
       onNewChat()
     }
     setIsOpen(false)
   }
 
-  // Filter conversations based on search query
+  const handleLogout = async () => {
+    await logout()
+    if (onNewChat) onNewChat()
+  }
+
   const filteredConversations = searchQuery
     ? conversations.filter(conv =>
         conv.title.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : conversations
 
-  // Group filtered conversations by date
   const groupedConversations = groupConversationsByDate(filteredConversations)
 
   return (
     <>
-      {/* Hamburger Button - Mobile only */}
       {!isOpen && (
         <button className="hamburger" onClick={toggleSidebar}>
           <span className="hamburger-line"></span>
@@ -143,11 +135,9 @@ function Sidebar({
         </button>
       )}
 
-      {/* Overlay - Mobile only */}
       {isOpen && <div className="sidebar-overlay" onClick={toggleSidebar}></div>}
 
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
-        {/* New Chat Button */}
         <button className="new-chat-btn" onClick={handleNewChat}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14"/>
@@ -155,23 +145,27 @@ function Sidebar({
           New Chat
         </button>
 
-        {/* Search */}
-        <div className="search-box">
-          <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="M21 21l-4.35-4.35"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search chats..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        {user && (
+          <div className="search-box">
+            <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Search chats..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        )}
 
-        {/* Chat History */}
         <div className="chat-history">
-          {loading ? (
+          {!user ? (
+            <div className="sidebar-empty">
+              Sign in to save and view your chat history
+            </div>
+          ) : loading ? (
             <div className="sidebar-loading">Loading...</div>
           ) : error ? (
             <div className="sidebar-error">{error}</div>
@@ -194,6 +188,24 @@ function Sidebar({
                 ))}
               </div>
             ))
+          )}
+        </div>
+
+        <div className="sidebar-footer">
+          {user ? (
+            <div className="user-info">
+              <span className="user-email">{user.displayName || user.email}</span>
+              <button className="logout-btn" onClick={handleLogout}>
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <button className="signin-btn" onClick={onAuthClick}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+              </svg>
+              Sign In
+            </button>
           )}
         </div>
       </aside>
